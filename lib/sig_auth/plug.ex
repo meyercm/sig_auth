@@ -34,7 +34,7 @@ defmodule SigAuth.Plug do
   def create_bundle(module, ~M{req_headers assigns} = conn) do
     body = assigns[:body]
     headers = req_headers
-    nonce = SigAuth.get_nonce(req_headers)
+    nonce = SigAuth.get_nonce(req_headers) |> String.to_integer
     ~M{username signature} = SigAuth.extract_authorization(headers)
     ~M{module conn headers body username nonce signature}
   end
@@ -64,7 +64,7 @@ defmodule SigAuth.Plug do
 
   @doc false
   def check_signature(false), do: false
-  def check_signature(~M{module username conn nonce body signature public_key} = bundle) do
+  def check_signature(~M{module username conn nonce body signature public_key}) do
     ~M{method request_path} = conn
     case SigAuth.valid?(method, request_path, nonce, body, signature, public_key) do
       false ->
