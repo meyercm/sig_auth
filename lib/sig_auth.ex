@@ -29,6 +29,9 @@ defmodule SigAuth do
 
   """
   import ShorterMaps
+  
+  @nonce_header "x-sigauth-nonce"
+  def nonce_header, do: @nonce_header
 
   @doc """
   This method loads both public and private SSH RSA keys into a variable for use
@@ -58,8 +61,6 @@ defmodule SigAuth do
      {"authorization", "SIGAUTH #{username}:#{signature}"}]
   end
 
-  @nonce_header "x-sigauth-nonce"
-  def nonce_header, do: @nonce_header
 
   def get_username(headers) do
     extract_authorization(headers)
