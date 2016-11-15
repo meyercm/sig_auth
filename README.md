@@ -8,41 +8,76 @@ To prove identity, the client holds the private key of an RSA keypair, and creat
 
 This library makes no assumptions about your HTTP client or server, except that they allow you to specify and read the headers, body, method and path of a request.
 
-[AWS](http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
-[Plug authentication framework](http://luk3thomas.com/authentiation-in-elixir-plug-20160722.html)
-[Erlang :public_key cheatsheet](https://gist.github.com/zucaritask/3864572)
+## Example Use
 
-## Use
+### Client
 
-### Authorization Header Construction (client-side)
+This client is using HTTPotion, but any client library that allows specifying
+custom headers can be used (SigAuth provides headers as binary 2-tuples, e.g.:
+`[{"authorization", "<authorization-token-stuff>"}, ...]`).
 
 ```elixir
-iex> private_key = SigAuth.load_key_from_file("~/.ssh/id_rsa")
-...> username = "myUserName"
-...> method = "GET"
-...> path = "/api/v1/people.json"
-...> body = ""
-...> epoch = System.system_time(:seconds)
-...> SigAuth.sign(method, path, epoch, body, username, private_key)
-[{"x-epoch", "1477530330"}, {"authorization", "SIGAUTH myUserName gY/n9ahh9+JfR..."}]
+priv_key = SigAuth.load_key("./test/testing_id_rsa")
+headers = SigAuth.sign("GET", "/api/users/27.json", 1, "", "bob", priv_key)
+# headers contains "authorization", and "x-sigauth-nonce" headers
+HTTPotion.get("www.myapp.com/api/users.27.json", [headers: headers])
 ```
 
 ### Request Validation (server-side)
 
+SigAuth provides the `SigAuth.Plug` module to streamline request validation and
+nonce maintenince.  Here is an example usage, with a public, non-authenticated
+API endpoint followed by a private, authenticated endpoint.
+
 ```elixir
-# within the context of a Plug request handler, hence the existing variable `conn`
-iex> %Conn{req_headers: headers, method: method, request_path: path} = conn
-...> %{"authorization" => auth, "x-epoch" => epoch} = Enum.into(headers, %{})
-...> ["SIGAUTH", username, signature] = String.split(auth, " ")
-...> public_key = MyKeyDb.get_public_key_for(username)
-...> SigAuth.verify(method, path, epoch, body, signature, public_key)
-true
+defmodule MyApp.ApiRouter
+  use Plug.Router
+
+  plug :match
+  plug :dispatch
+
+  # Not Authenticated:
+  forward "/public", to: MyApp.PublicApiRouter
+
+  plug SigAuth.Plug, credential_server: MyApp.CredServer # See below for details
+
+  # Authenticated:
+  forward "/private", to: MyApp.PrivateApiRouter
+  # ...
+
 ```
 
+## IMPORTANT NOTES:
 
+ - This plug *must* read the body of the request to verify the signature. This
+ may well break your plug pipeline (Parsers, especially).  Currently, the body
+ is stored in `conn.assigns[:body]` after it is read.  If you have an idea for
+ a more elegant solution, feel free to provide a pull-request.
 
-## Installation
+ - The username in the "authorization" header is stored for convenience in
+ `conn.assigns[:username]`; this field can be used for user / role based
+ authentication of individual endpoints; `SigAuth` has proven that the
+ requestor possesses the private key associated with that username.
+
+## CredentialServer
+
+Rather than owning the enrollment and key management problem, SigAuth offloads
+this work to you.  The `SigAuth.CredentialServer` module specifies the method
+signatures that your credential server must expose for SigAuth.Plug to use it.
+
+An example in-memory credential server is provided in
+`SigAuth.ExampleCredentialServer`.
+
+## Installation (Not yet)
 
 ```elixir
 {:sig_auth, "~> 0.1.0"},
 ```
+
+## Credits
+
+I found the following links helpful in the construction of this application:
+
+[AWS authorization scheme](http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
+[Plug authentication example](http://luk3thomas.com/authentiation-in-elixir-plug-20160722.html)
+[Erlang :public_key cheatsheet](https://gist.github.com/zucaritask/3864572)
