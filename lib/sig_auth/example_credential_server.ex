@@ -1,4 +1,52 @@
 defmodule SigAuth.ExampleCredentialServer do
+  @moduledoc """
+
+  This is an example of the `CredentialServer` behavior;  this GenServer holds
+  the public keys of the authorized users for an application.
+
+  In a production environment, rather than an in-memory store, a database or
+  file-backed `CredentialServer` would be appropriate.
+
+  To validate nonces, this server simply insists that nonces are monotonically
+  increasing;  Linux Epoch time (perhaps given in milliseconds) is an obvious
+  way to accomplish this goal.  Further validation could insist that the nonce
+  represents a time +/- N minutes of the server's system time.
+
+  ## Use
+
+  ### Startup
+
+  ```elixir
+     iex> {:ok, _pid} = SigAuth.ExampleCredentialServer.start_link
+     ...> pub_key = SigAuth.load_key("./test/testing_id_rsa.pub")
+     ...> SigAuth.ExampleCredentialServer.add_user("bob", pub_key)
+  ```
+
+  ### Authorization
+
+  In your top-level api routing plug:
+
+  ```elixir
+  defmodule MyApp.ApiRouter do
+    use Plug.Router
+
+    # invalid requests will not make it past this line:
+    plug SigAuth.Plug, credential_server: SigAuth.ExampleCredentialServer
+
+    # From here on, we are certain that the request is authentiated, and can
+    # trust the client:
+
+    plug :match
+    plug :dispatch
+
+    forward "/users", to: MyApp.Handlers.Users
+    # ... and so on with the API routing
+
+    match(_), do: send_resp(conn, 404, "")
+  end
+  ```
+
+  """
   use GenServer
   use SigAuth.CredentialServer
 
@@ -27,6 +75,9 @@ defmodule SigAuth.ExampleCredentialServer do
   ##############################
   # API for CredentialServer
   ##############################
+
+  # These methods are used by SigAuth.Plug to validate incoming requests
+  # any module that implements these methods can be used as a CredentialServer
 
   def get_public_key(username) do
     GenServer.call(__MODULE__, {:get_public_key, username})

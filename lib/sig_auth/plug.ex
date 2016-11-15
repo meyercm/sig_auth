@@ -1,12 +1,55 @@
 defmodule SigAuth.Plug do
+  @moduledoc """
+
+  This Plug is the intended entry point for Server-side SigAuth use.
+
+  In order to function, a CredentialServer module must be specified to provide
+  the mapping from usenames to public keys.  See SigAuth.ExampleCredentialServer
+  for more details.
+
+  This plug should be specified early in the request Plug-chain, and protects
+  all subsequent routes, e.g.:
+
+  ```elixir
+  defmodule MyApp.ApiRouter
+    use Plug.Router
+
+    plug :match
+    plug :dispatch
+
+    # Not Authenticated:
+    forward "/public", to: MyApp.PublicApiRouter
+
+    plug SigAuth.Plug, credential_server: MyApp.CredServer
+
+    # Authenticated:
+    forward "/private", to: MyApp.PrivateApiRouter
+    # ...
+
+  ```
+
+  ## IMPORTANT NOTES:
+
+   - This plug *must* read the body of the request to verify the signature. This
+   may well break your plug pipeline (Parsers, especially).  Currently, the body
+   is stored in `conn.assigns[:body]` after it is read.  If you have an idea for
+   a more elegant solution, feel free to provide a pull-request.
+
+   - The username in the "authorization" header is stored for convenience in
+   `conn.assigns[:username]`; this field can be used for user / role based
+   authentication of individual endpoints; `SigAuth` has proven that the
+   requestor possesses the private key associated with that username.
+
+  """
   import Plug.Conn
   import ShorterMaps
 
   require Logger
 
-  def init(%{} = opts), do: opts
-  def init(opts) do
+  def init(%{credential_server: _server} = opts), do: opts
+  def init(opts) when is_list(opts) do
     Enum.into(opts, %{})
+    |> init
   end
 
   def call(conn, ~M{credential_server}) do
