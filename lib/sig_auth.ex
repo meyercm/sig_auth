@@ -1,8 +1,8 @@
 defmodule SigAuth do
   import ShorterMaps
 
-  @spec load_key_from_file(binary) :: {:ok, binary}
-  def load_key_from_file(filename) do
+  @spec load_key(binary) :: {:ok, binary}
+  def load_key(filename) do
     file_contents = File.read!(filename)
     if file_contents =~ ~r/^-----BEGIN RSA PRIVATE KEY-----/ do
       [entry] = :public_key.pem_decode(file_contents)
@@ -29,6 +29,11 @@ defmodule SigAuth do
     |> Map.get(:username)
   end
 
+  def get_nonce(headers) do
+    %{@nonce_header => nonce} = Enum.into(headers, %{})
+    nonce
+  end
+
   def get_signature(headers) do
     extract_authorization(headers)
     |> Map.get(:signature)
@@ -46,8 +51,9 @@ defmodule SigAuth do
 
   @doc false
   def extract_authorization(headers) do
-    "SIGAUTH "<> auth = Keyword.get(headers, "authorization")
+    %{"authorization" => "SIGAUTH " <> auth} = Enum.into(headers, %{})
     [username, signature] = String.split(auth, ":")
+    signature = Base.decode64!(signature)
     ~M{username signature}
   end
 end

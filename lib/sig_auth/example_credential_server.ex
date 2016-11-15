@@ -12,6 +12,10 @@ defmodule SigAuth.ExampleCredentialServer do
     GenServer.start_link(__MODULE__, [], [name: __MODULE__])
   end
 
+  def stop() do
+    GenServer.call(__MODULE__, :stop)
+  end
+
   def add_user(username, public_key) do
     GenServer.call(__MODULE__, {:add_user, username, public_key})
   end
@@ -53,28 +57,28 @@ defmodule SigAuth.ExampleCredentialServer do
     {:ok, %State{}}
   end
 
-  def handle_call({:add_user, username, public_key}, ~M{users} = state) do
+  def handle_call({:add_user, username, public_key}, _from, ~M{users} = state) do
     nonce = 0
     users = Map.put(users, username, ~M{username public_key nonce})
     {:reply, :ok, %{state|users: users}}
   end
-  def handle_call({:remove_user, username}, ~M{users} = state) do
+  def handle_call({:remove_user, username}, _from, ~M{users} = state) do
     users = Map.delete(users, username)
     {:reply, :ok, %{state|users: users}}
   end
-  def handle_call({:get_public_key, username}, ~M{users} = state) do
+  def handle_call({:get_public_key, username}, _from, ~M{users} = state) do
     reply = case Map.get(users, username) do
       nil -> {:error, :no_such_user}
-      key -> {:ok, key}
+      %{public_key: key} -> {:ok, key}
     end
     {:reply, reply, state}
   end
-  def handle_call({:nonce_valid?, username, nonce}, ~M{users} = state) do
+  def handle_call({:nonce_valid?, username, nonce}, _from, ~M{users} = state) do
     old_nonce = users[username][:nonce]
     reply = nonce > old_nonce
     {:reply, reply, state}
   end
-  def handle_call({:update_nonce, username, nonce}, ~M{users} = state) do
+  def handle_call({:update_nonce, username, nonce}, _from, ~M{users} = state) do
     case Map.has_key?(users, username) do
       true ->
         users = put_in(users[username][:nonce], nonce)
@@ -82,6 +86,9 @@ defmodule SigAuth.ExampleCredentialServer do
       false ->
         {:reply, {:error, :no_such_user}, state}
     end
+  end
+  def handle_call(:stop, _from, state) do
+    {:stop, :normal, :ok, state}
   end
 
   ##############################
