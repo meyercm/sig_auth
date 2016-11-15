@@ -18,9 +18,13 @@ custom headers can be used (SigAuth provides headers as binary 2-tuples, e.g.:
 
 ```elixir
 priv_key = SigAuth.load_key("./test/testing_id_rsa")
-headers = SigAuth.sign("GET", "/api/users/27.json", 1, "", "bob", priv_key)
+nonce = System.system_time(:milliseoncds)
+username = "bob"
+body = ""
+path = "/api/users.27.json"
+headers = SigAuth.sign("GET", path, nonce, body, username, priv_key)
 # headers contains "authorization", and "x-sigauth-nonce" headers
-HTTPotion.get("www.myapp.com/api/users.27.json", [headers: headers])
+HTTPotion.get("www.myapp.com" <> path, [headers: headers])
 ```
 
 ### Server Request Validation
