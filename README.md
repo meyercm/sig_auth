@@ -8,6 +8,10 @@ To prove identity, the client holds the private key of an RSA keypair, and creat
 
 This library makes no assumptions about your HTTP client or server, except that they allow you to specify and read the headers, body, method and path of a request.
 
+[AWS](http://docs.aws.amazon.com/AmazonS3/latest/dev/RESTAuthentication.html)
+[Plug authentication framework](http://luk3thomas.com/authentiation-in-elixir-plug-20160722.html)
+[Erlang :public_key cheatsheet](https://gist.github.com/zucaritask/3864572)
+
 ## Use
 
 ### Authorization Header Construction (client-side)

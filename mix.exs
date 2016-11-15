@@ -15,6 +15,9 @@ defmodule SigAuth.Mixfile do
   end
 
   defp deps do
-    []
+    [
+      {:plug, "~> 1.2"},
+      {:shorter_maps, "~> 1.0"},
+    ]
   end
 end
