@@ -61,6 +61,13 @@ defmodule SigAuth.PlugTest do
     SigAuth.ExampleCredentialServer.stop
   end
 
+  test "sad path, missing headers" do
+    conn = conn(:get, "/")
+    conn = SigAuth.Plug.call(conn, %{credential_server: SigAuth.ExampleCredentialServer})
+    assert {401, _, _} = sent_resp(conn)
+  end
+
+
   test "happy path" do
     SigAuth.ExampleCredentialServer.start_link
     pub_key = SigAuth.load_key("./test/testing_id_rsa.pub")

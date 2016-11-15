@@ -29,7 +29,7 @@ defmodule SigAuth do
 
   """
   import ShorterMaps
-  
+
   @nonce_header "x-sigauth-nonce"
   def nonce_header, do: @nonce_header
 
@@ -68,8 +68,11 @@ defmodule SigAuth do
   end
 
   def get_nonce(headers) do
-    %{@nonce_header => nonce} = Enum.into(headers, %{})
-    nonce
+    case Enum.into(headers, %{}) do
+      %{@nonce_header => nonce} ->
+        String.to_integer(nonce)
+      _ -> nil
+    end
   end
 
   def get_signature(headers) do
@@ -89,9 +92,12 @@ defmodule SigAuth do
 
   @doc false
   def extract_authorization(headers) do
-    %{"authorization" => "SIGAUTH " <> auth} = Enum.into(headers, %{})
-    [username, signature] = String.split(auth, ":")
-    signature = Base.decode64!(signature)
-    ~M{username signature}
+    case Enum.into(headers, %{}) do
+      %{"authorization" => "SIGAUTH " <> auth} ->
+        [username, signature] = String.split(auth, ":")
+        signature = Base.decode64!(signature)
+        ~M{username signature}
+      _ -> %{}
+    end
   end
 end

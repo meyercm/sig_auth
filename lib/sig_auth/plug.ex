@@ -77,12 +77,18 @@ defmodule SigAuth.Plug do
   def create_bundle(module, ~M{req_headers assigns} = conn) do
     body = assigns[:body]
     headers = req_headers
-    nonce = SigAuth.get_nonce(req_headers) |> String.to_integer
-    ~M{username signature} = SigAuth.extract_authorization(headers)
-    ~M{module conn headers body username nonce signature}
+    nonce = SigAuth.get_nonce(req_headers)
+    case SigAuth.extract_authorization(headers) do
+      ~M{username signature} ->
+        ~M{module conn headers body username nonce signature}
+      _ ->
+        Logger.warn("SIGAUTH: request missing auth header")
+        false
+    end
   end
 
   @doc false
+  def get_pk(false), do: false
   def get_pk(~M{module username} = bundle) do
     case apply(module, :get_public_key, [username]) do
       {:error, reason} ->
