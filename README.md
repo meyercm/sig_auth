@@ -38,7 +38,7 @@ custom headers can be used (SigAuth provides headers as binary 2-tuples, e.g.:
 
 ```elixir
 priv_key = SigAuth.load_key("./test/testing_id_rsa")
-nonce = System.system_time(:milliseoncds)
+nonce = System.system_time(:milliseconds)
 username = "bob"
 body = ""
 path = "/api/users.27.json"
@@ -50,7 +50,7 @@ HTTPotion.get("www.myapp.com" <> path, [headers: headers])
 ### Server Request Validation
 
 SigAuth provides the `SigAuth.Plug` module to streamline request validation and
-nonce maintenince.  Here is an example usage, with a public, non-authenticated
+nonce maintenance.  Here is an example usage, with a public, non-authenticated
 API endpoint followed by a private, authenticated endpoint.
 
 ```elixir
