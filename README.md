@@ -10,6 +10,26 @@ This library makes no assumptions about your HTTP client or server, except that 
 
 ## Example Use
 
+### Generate Keys
+
+The ssh-keygen command creates RSA public/private keypairs, saving the results in
+files that SigAuth can load using `load_key/1`
+
+The bash commands for generating new keys.  Note that SigAuth expects the
+keyfiles to be unencrypted (i.e. no passphrase).
+
+```
+$ ssh-keygen -t rsa <enter>
+
+Enter file in which to save the key: <type filename, enter>
+
+Enter passphrase (empty for no passphrase): <enter>
+Enter same passphrase again: <enter>
+Your identification has been saved in <filename>.
+Your public key has been saved in <filename>.pub.
+
+```
+
 ### Client Request Signing
 
 This client is using HTTPotion, but any client library that allows specifying
