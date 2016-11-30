@@ -117,7 +117,7 @@ defmodule SigAuth.Plug do
     ~M{method request_path} = conn
     case SigAuth.valid?(method, request_path, nonce, body, signature, public_key) do
       false ->
-        Logger.warn("SIGAUTH: invalid signature")
+        Logger.warn("SIGAUTH: invalid signature for #{username}")
         false
       true ->
         apply(module, :update_nonce, [username, nonce])

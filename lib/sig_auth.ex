@@ -30,14 +30,23 @@ defmodule SigAuth do
   """
   import ShorterMaps
 
+  @doc false
   @nonce_header "x-sigauth-nonce"
   def nonce_header, do: @nonce_header
 
   @doc """
   This method loads both public and private SSH RSA keys into a variable for use
   with either client-signing, or loading credentials into a credential server.
+
+  ## Examples:
+
+      iex> priv = SigAuth.load_key("test/testing_id_rsa")
+      {:RSAPrivateKey, :"two-prime", 1925825628552485095461711380...}
+
+      iex> pub = SigAuth.load_key("test/testing_id_rsa.pub")
+      {:RSAPublicKey, 1925825628552485...}
   """
-  @spec load_key(binary) :: {:ok, any}
+  @spec load_key(String.t) :: {:ok, any}
   def load_key(filename) do
     file_contents = File.read!(filename)
     if file_contents =~ ~r/^-----BEGIN RSA PRIVATE KEY-----/ do
@@ -50,9 +59,18 @@ defmodule SigAuth do
   end
 
   @doc """
-  This method actually signs a request, accepting each component thereof.
+  This method actually signs a request, accepting each component thereof.  The
+  returned headers should be included when sending the request. The Authorization
+  header produced contains the base 64 characters of the signature.
+
+  ## Examples:
+
+      iex> priv = SigAuth.load_key("test/testing_id_rsa")
+      ...> nonce = System.system_time(:microseconds)
+      ...> headers = SigAuth.sign("GET", "/api/v1/people", nonce, "", "Chris", priv)
+      [{"x-sigauth-nonce", "1480535381422"},{"authorization", "SIGAUTH Chris:XlP49MtvM+dkE23...}]
   """
-  @spec sign(binary, binary, integer, binary, binary, any) :: [{binary, binary}]
+  @spec sign(String.t, String.t, integer, binary, String.t, any) :: [{String.t, String.t}]
   def sign(method, path, nonce, body, username, private_key) do
     signature = binary_to_sign(method, path, nonce, body)
                 |> :public_key.sign(:sha256, private_key)
@@ -61,12 +79,31 @@ defmodule SigAuth do
      {"authorization", "SIGAUTH #{username}:#{signature}"}]
   end
 
+  @doc """
+  Reports the validity of a signature.  Intended for use by `SigAuth.Plug`, it
+  may nevertheless be used by server code that cannot use the Plug.
+  """
+  @spec valid?(String.t, String.t, integer, binary, binary, any) :: true|false
+  def valid?(method, path, nonce, body, signature, public_key) do
+    binary_to_sign(method, path, nonce, body)
+    |> :public_key.verify(:sha256, signature, public_key)
+  end
+  #TODO: add another version of this method to accept Base-64 encoded signatures
 
+
+  @doc """
+  Server utility for extracting a username from request headers.
+  """
+  @spec get_username([{String.t, String.t}]) :: String.t
   def get_username(headers) do
     extract_authorization(headers)
     |> Map.get(:username)
   end
 
+  @doc """
+  Utility for extracting a nonce from request headers.
+  """
+  @spec get_nonce([{String.t, String.t}]) :: integer
   def get_nonce(headers) do
     case Enum.into(headers, %{}) do
       %{@nonce_header => nonce} ->
@@ -75,15 +112,15 @@ defmodule SigAuth do
     end
   end
 
+  @doc """
+  Utility for extracting a signature from request headers.
+  """
+  @spec get_signature([{String.t, String.t}]) :: binary
   def get_signature(headers) do
     extract_authorization(headers)
     |> Map.get(:signature)
   end
 
-  def valid?(method, path, nonce, body, signature, public_key) do
-    binary_to_sign(method, path, nonce, body)
-    |> :public_key.verify(:sha256, signature, public_key)
-  end
 
   @doc false
   def binary_to_sign(method, path, nonce, body) do
