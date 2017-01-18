@@ -1,7 +1,7 @@
 defmodule SigAuth.Mixfile do
   use Mix.Project
 
-  @version "0.1.1"
+  @version "0.1.2"
   @repo_url "https://github.com/meyercm/sig_auth"
 
   def project do
@@ -32,7 +32,7 @@ defmodule SigAuth.Mixfile do
     [
       {:plug, "~> 1.2"},
       {:shorter_maps, "~> 1.0"},
-      {:ex_doc, ">= 0.0.0", only: :dev}
+      {:ex_doc, ">= 0.0.0", only: :dev},
     ]
   end
 end

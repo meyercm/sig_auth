@@ -118,6 +118,8 @@ defmodule SigAuth.Plug do
     case SigAuth.valid?(method, request_path, nonce, body, signature, public_key) do
       false ->
         Logger.warn("SIGAUTH: invalid signature for #{username}")
+        signature_components = ~M{method request_path nonce body}
+        Logger.debug("SIGAUTH: failed signature components: #{inspect signature_components}")
         false
       true ->
         apply(module, :update_nonce, [username, nonce])
