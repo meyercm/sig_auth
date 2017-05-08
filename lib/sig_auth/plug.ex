@@ -74,13 +74,13 @@ defmodule SigAuth.Plug do
   @nonce_header SigAuth.nonce_header
 
   @doc false
-  def create_bundle(module, ~M{req_headers assigns} = conn) do
+  def create_bundle(module, ~M{req_headers, assigns} = conn) do
     body = assigns[:body]
     headers = req_headers
     nonce = SigAuth.get_nonce(req_headers)
     case SigAuth.extract_authorization(headers) do
-      ~M{username signature} ->
-        ~M{module conn headers body username nonce signature}
+      ~M{username, signature} ->
+        ~M{module, conn, headers, body, username, nonce, signature}
       _ ->
         Logger.warn("SIGAUTH: request missing auth header")
         false
@@ -89,7 +89,7 @@ defmodule SigAuth.Plug do
 
   @doc false
   def get_pk(false), do: false
-  def get_pk(~M{module username} = bundle) do
+  def get_pk(~M{module, username} = bundle) do
     case apply(module, :get_public_key, [username]) do
       {:error, reason} ->
         Logger.warn("SIGAUTH: public_key retrieval failed for #{username} (#{reason})")
@@ -101,7 +101,7 @@ defmodule SigAuth.Plug do
 
   @doc false
   def check_nonce(false), do: false
-  def check_nonce(~M{module username nonce} = bundle) do
+  def check_nonce(~M{module, username, nonce} = bundle) do
     case apply(module, :nonce_valid?, [username, nonce]) do
       false ->
         Logger.warn("SIGAUTH: invalid nonce #{nonce} for #{username}")
@@ -113,13 +113,13 @@ defmodule SigAuth.Plug do
 
   @doc false
   def check_signature(false), do: false
-  def check_signature(~M{module username conn nonce body signature public_key}) do
-    ~M{method request_path} = conn
+  def check_signature(~M{module, username, conn, nonce, body, signature, public_key}) do
+    ~M{method, request_path} = conn
     case SigAuth.valid?(method, request_path, nonce, body, signature, public_key) do
       false ->
         Logger.warn("SIGAUTH: invalid signature for #{username}")
-        signature_components = ~M{method request_path nonce body}
-        Logger.debug("SIGAUTH: failed signature components: #{inspect signature_components}")
+        signature_components = ~M{method, request_path, nonce, body}
+        Logger.debug("SIGAUTH: wrong signature: #{inspect signature}. components: #{inspect signature_components}")
         false
       true ->
         apply(module, :update_nonce, [username, nonce])

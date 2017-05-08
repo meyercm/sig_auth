@@ -91,7 +91,7 @@ defmodule SigAuth.ExampleCredentialServer do
     GenServer.call(__MODULE__, {:update_nonce, username, nonce})
   end
 
-  #users: %{username => ~M{username last_nonce public_key}}
+  #users: %{username => ~M{username, last_nonce, public_key}}
   defmodule State do
     @doc false
     defstruct [
@@ -110,7 +110,7 @@ defmodule SigAuth.ExampleCredentialServer do
 
   def handle_call({:add_user, username, public_key}, _from, ~M{users} = state) do
     nonce = 0
-    users = Map.put(users, username, ~M{username public_key nonce})
+    users = Map.put(users, username, ~M{username, public_key, nonce})
     {:reply, :ok, %{state|users: users}}
   end
   def handle_call({:remove_user, username}, _from, ~M{users} = state) do

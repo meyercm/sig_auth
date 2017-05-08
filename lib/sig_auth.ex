@@ -49,11 +49,19 @@ defmodule SigAuth do
   @spec load_key(String.t) :: {:ok, any}
   def load_key(filename) do
     file_contents = File.read!(filename)
-    if file_contents =~ ~r/^-----BEGIN RSA PRIVATE KEY-----/ do
-      [entry] = :public_key.pem_decode(file_contents)
+    load_key_from_string(file_contents)
+  end
+
+  @doc """
+  Load a public or private key from a string.
+  """
+  @spec load_key_from_string(String.t) :: {:ok, any}
+  def load_key_from_string(key_string) do
+    if key_string =~ ~r/^-----BEGIN RSA PRIVATE KEY-----/ do
+      [entry] = :public_key.pem_decode(key_string)
       :public_key.pem_entry_decode(entry)
     else
-      [{key,_}] = :public_key.ssh_decode(file_contents, :public_key)
+      [{key,_}] = :public_key.ssh_decode(key_string, :public_key)
       key
     end
   end
@@ -133,7 +141,7 @@ defmodule SigAuth do
       %{"authorization" => "SIGAUTH " <> auth} ->
         [username, signature] = String.split(auth, ":")
         signature = Base.decode64!(signature)
-        ~M{username signature}
+        ~M{username, signature}
       _ -> %{}
     end
   end
