@@ -2,4 +2,4 @@
   "ex_doc": {:hex, :ex_doc, "0.14.3", "e61cec6cf9731d7d23d254266ab06ac1decbb7651c3d1568402ec535d387b6f7", [:mix], [{:earmark, "~> 1.0", [hex: :earmark, repo: "hexpm", optional: false]}], "hexpm"},
   "mime": {:hex, :mime, "1.0.1", "05c393850524767d13a53627df71beeebb016205eb43bfbd92d14d24ec7a1b51", [], [], "hexpm"},
   "plug": {:hex, :plug, "1.2.2", "cfbda521b54c92ab8ddffb173fbaabed8d8fc94bec07cd9bb58a84c1c501b0bd", [], [{:cowboy, "~> 1.0", [hex: :cowboy, repo: "hexpm", optional: true]}, {:mime, "~> 1.0", [hex: :mime, repo: "hexpm", optional: false]}], "hexpm"},
-  "shorter_maps": {:hex, :shorter_maps, "2.1.0", "e4654a4d1015e02af9b3edba8d7de03c06ce8bab394248c0a7f71f4ee64a97ad", [:mix], [], "hexpm"}}
+  "shorter_maps": {:hex, :shorter_maps, "2.2.1", "65298ed203be953a6d14755aab5c9f7e365e81104315a6799f9911e93cb99364", [:mix], [], "hexpm"}}
